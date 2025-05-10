@@ -1,8 +1,9 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from woocommerce import API
 
 app = Flask(__name__)
 
+# WooCommerce API σύνδεση
 wcapi = API(
     url="https://www.joyfashionhouse.com",
     consumer_key="ck_d4c3aab55f4192ff737a1cac745c70db1fa8451c",
@@ -26,16 +27,38 @@ def get_product():
         products = wcapi.get("products", params={"per_page": 100, "status": "publish", "page": page}).json()
         if not products:
             break
-        for p in products:
-            if query in p["name"].lower():
+        for product in products:
+            if query in product["name"].lower():
+                # Πιθανόν να έχει παραλλαγές
+                sizes = []
+                color = "-"
+                price = product.get("price", "-")
+                regular_price = "-"
+                sale_price = "-"
+                if product["type"] == "variable":
+                    variations = wcapi.get(f"products/{product['id']}/variations").json()
+                    for v in variations:
+                        price = v.get("price", "-")
+                        regular_price = v.get("regular_price", "-")
+                        sale_price = v.get("sale_price", "-")
+                        for attr in v["attributes"]:
+                            if attr["name"] == "Μέγεθος":
+                                sizes.append(attr["option"])
+                            if attr["name"] == "Χρώμα":
+                                color = attr["option"]
+                
                 results.append({
-                    "name": p["name"],
-                    "short_description": p.get("short_description", ""),
-                    "description": p.get("description", ""),
-                    "price": p.get("price"),
-                    "image": p["images"][0]["src"] if p["images"] else None,
-                    "categories": [c["name"] for c in p["categories"]],
-                    "id": p["id"]
+                    "name": product["name"],
+                    "short_description": product.get("short_description", ""),
+                    "description": product.get("description", ""),
+                    "price": price,
+                    "regular_price": regular_price,
+                    "sale_price": sale_price,
+                    "available_sizes": sizes,
+                    "color": color,
+                    "image": product["images"][0]["src"] if product["images"] else None,
+                    "categories": [c["name"] for c in product["categories"]],
+                    "id": product["id"]
                 })
         page += 1
 
@@ -43,6 +66,3 @@ def get_product():
         return jsonify({"message": "Δεν βρέθηκε προϊόν"}), 404
 
     return jsonify(results)
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)

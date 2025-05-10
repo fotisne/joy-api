@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify, request
 from woocommerce import API
 
@@ -29,7 +30,6 @@ def get_product():
             break
         for product in products:
             if query in product["name"].lower():
-                # Πιθανόν να έχει παραλλαγές
                 sizes = []
                 color = "-"
                 price = product.get("price", "-")
@@ -46,7 +46,7 @@ def get_product():
                                 sizes.append(attr["option"])
                             if attr["name"] == "Χρώμα":
                                 color = attr["option"]
-                
+
                 results.append({
                     "name": product["name"],
                     "short_description": product.get("short_description", ""),
@@ -66,3 +66,8 @@ def get_product():
         return jsonify({"message": "Δεν βρέθηκε προϊόν"}), 404
 
     return jsonify(results)
+
+# ✅ Το σωστό block για το Render:
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

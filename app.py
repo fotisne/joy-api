@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from woocommerce import API
 
-app = Flask(gunicorn app:app)
+app = Flask(__name__)
 
 wcapi = API(
     url="https://www.joyfashionhouse.com",
